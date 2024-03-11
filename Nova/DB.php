@@ -1135,7 +1135,7 @@ class DB
 
 	protected function _getDsn(string $dsn): bool|array|string
 	{
-		str_starts_with($dsn, 'dsn.') && $dsn = $this->conf($dsn);
+		str_starts_with($dsn, 'db.dsn') && $dsn = $this->conf($dsn);
 		if (!$dsn) {
 			return $this->error('No DSN');
 		}

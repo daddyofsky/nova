@@ -29,9 +29,9 @@ return [
 	'debug.log'      => false,
 
 	// db
-	'db.dsn'          => env('DSN_DEFAULT', 'mysql://user:pass@db/nova'),
-	'db.dsn_slave'    => env('DSN_DEFAULT_SLAVE', 'mysql://user:pass@db/nova'),
-	'db.dsn_test'     => env('DSN_TEST', 'mysql://user:pass/nova_test'),
+	'db.dsn'          => env('DSN', 'mysql://user:pass@host/db'),
+	'db.dsn_slave'    => env('DSN_SLAVE', 'mysql://user:pass@host/db'),
+	'db.dsn_test'     => env('DSN_TEST', 'mysql://user:pass@host/db'),
 	'db.table_prefix' => '',
 
 	// view
