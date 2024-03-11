@@ -1,0 +1,61 @@
+<style id="durian-alert-style">
+	body { /*display:flex; align-items:center; justify-content:center;*/ width:100%; height:100%; margin:0; }
+	dialog.durian-alert { box-sizing:border-box; min-width:350px; max-width:50vw; padding:0; border:var(--nova-layer-border, 1px solid #000); border-radius:var(--nova-layer-border-radius, 0); }
+	dialog.durian-alert::backdrop { opacity:var(--nova-layer-backdrop-opacity, 0.5); background-color:#000; }
+	dialog.durian-alert * { box-sizing:border-box; }
+	dialog.durian-alert header { display:flex; margin:0; padding:10px; color:var(--nova-layer-background-color, #fff); background-color:var(--nova-layer-primary-color, #000); }
+	dialog.durian-alert header h2 { margin:0; font-size:1.2em; font-weight:400; color:#fff; }
+	dialog.durian-alert .alert-body { display:flex; flex-direction:column; margin:20px; min-height:70px; align-items:center; justify-content:center; text-align:center; }
+	dialog.durian-alert .alert-message { padding:10px; word-wrap:anywhere; }
+	dialog.durian-alert .alert-input { display:none; min-width:250px; padding:2px 10px; border:1px solid #ddd; }
+	dialog.durian-alert footer { margin:30px 20px; text-align:center; }
+	dialog.durian-alert button { border:1px solid var(--nova-layer-primary-color, #000); border-radius:3px; margin:0; padding:2px 10px; font-size:12px; color:#ffffff; font-weight:bold; line-height:29px; cursor:pointer; vertical-align:middle; }
+	dialog.durian-alert .btn-alert-ok { min-width:80px; background-color:var(--nova-layer-primary-color, #000); border:1px solid #000; }
+	dialog.durian-alert .btn-alert-cancel { display:none; opacity:0.5; background-color:var(--nova-layer-primary-color, #000); }
+	dialog.durian-alert .btn-alert-close { display:block; width:18px; height:18px; overflow:hidden; margin:0 0 0 auto; padding:1px 3px; font-size:12px; line-height:16px; border-radius:2px; background-color:var(--nova-layer-primary-color, #000); }
+	dialog.durian-alert .btn-alert-close:before { content:"\2715"; letter-spacing:10px; }
+
+	dialog.durian-alert.alert-confirm .btn-alert-cancel, dialog.durian-alert.alert-prompt .btn-alert-cancel { display:inline-block; }
+	dialog.durian-alert.alert-prompt .alert-input { display:block; }
+	dialog.durian-alert.alert-loading { min-width:200px; }
+	dialog.durian-alert.alert-loading header, dialog.durian-alert.alert-loading footer { display:none; }
+	dialog.durian-alert.alert-loading .alert-body { margin:0; }
+	dialog.durian-alert.alert-toast { min-width:200px; top:80%; }
+	dialog.durian-alert.alert-toast header, dialog.durian-alert.alert-toast footer { display:none; }
+	dialog.durian-alert.alert-toast .alert-body { margin:0; }
+</style>
+
+<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', (event) => {
+		const dialog = document.getElementById('error-dialog');
+		dialog.addEventListener('open', function(e) {
+			this.getElementsByClassName('alert-message').focus();
+		});
+		dialog.addEventListener('close', function(e) {
+			const redirectTo = '{url}';
+			if (redirectTo) {
+				location.href = redirectTo;
+			} else {
+				// TODO
+			}
+		}, { once: true });
+		dialog.showModal();
+	});
+</script>
+
+
+ <dialog id="error-dialog" class="durian-alert">
+	<form method="dialog">
+		<header>
+			<h2 class="alert-title">{{LANG:알림}}</h2>
+			<button class="btn-alert-close" value="close">Close</button>
+		</header>
+		<div class="alert-body">
+			<div class="alert-message">{message}</div>
+			<input class="alert-input" type="text" value="">
+		</div>
+		<footer>
+			<button class="btn-alert-ok" value="OK">{{LANG:확인}}</button>
+		</footer>
+	</form>
+</dialog>

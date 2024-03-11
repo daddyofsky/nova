@@ -1,2 +1,2 @@
-# nova
+# Nova
 Nova PHP Framework

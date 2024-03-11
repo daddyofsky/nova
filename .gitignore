@@ -1,0 +1,13 @@
+.env
+.phpstorm.meta.php
+/.idea
+/.fleet
+/.vscode
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+/.phpunit.cache
+.phpunit.result.cache
