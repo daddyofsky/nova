@@ -677,7 +677,7 @@ class DB
 			$this->cryptManager->encryptData($data);
 		}
 		$sql = $this->_getInsertQuery($data, $data_update);
-		return $this->_query($sql, $this->tmpParams);
+		return (bool)$this->_query($sql, $this->tmpParams);
 	}
 
 	public function insertAndGetId(array|ArrayObject $data, array|bool $data_update = false): int|string|bool

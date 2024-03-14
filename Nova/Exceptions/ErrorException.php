@@ -1,13 +1,22 @@
 <?php
 namespace Nova\Exceptions;
 
+use ArrayObject;
 use Exception;
+use Throwable;
 
 class ErrorException extends Exception
 {
 	protected string $label = '';
 	protected string $url   = '';
 	protected array  $data  = [];
+
+	public function __construct(string $message = "", int $code = 0, ?Throwable $previous = null)
+	{
+		parent::__construct($message, $code, $previous);
+
+		$this->url = route();
+	}
 
 	public function getLabel(): string
 	{
@@ -38,10 +47,10 @@ class ErrorException extends Exception
 		return $this;
 	}
 
-	public function with(string|array $key, mixed $value = null): static
+	public function with(string|array|ArrayObject $key, mixed $value = null): static
 	{
-		if (is_array($key)) {
-			$this->data += $key;
+		if (is_array($key) || $key instanceof ArrayObject) {
+			$this->data += (array)$key;
 		} else {
 			$this->data += [$key => $value];
 		}

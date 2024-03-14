@@ -58,12 +58,6 @@ class FormRequest extends ArrayData
 
 		$this->messages += $this->commonMessages;
 		
-		if (method_exists($this, 'authorize')) {
-			$parameters = Reflection::bindParameters([$this, 'authorize'], $request->args());
-			if ($this->authorize(...$parameters) === false) {
-				throw new NotAuthorizedException($this->message('authorize'));
-			}
-		}
 	}
 
 	public function __call($method, $args)
@@ -80,6 +74,19 @@ class FormRequest extends ArrayData
 		throw new Error(sprintf('Error: Call to undefined method %s::%s()', static::class, $method));
 	}
 
+	/**
+	 * @throws \Nova\Exceptions\ErrorException
+	 */
+	public function guard(): void
+	{
+		if (method_exists($this, 'authorize')) {
+			$parameters = Reflection::bindParameters([$this, 'authorize'], $this->request->args());
+			if ($this->authorize(...$parameters) === false) {
+				throw new NotAuthorizedException($this->message('authorize'));
+			}
+		}
+	}
+	
 	public function setValidator(Validator $validator): static
 	{
 		$this->validator = $validator;

@@ -1,7 +1,6 @@
 <?php
 namespace Nova\Template;
 
-use Error;
 use RuntimeException;
 
 /**
@@ -11,11 +10,8 @@ use RuntimeException;
  */
 class SkyTemplateCompiler
 {
-	protected const PATTERN_VAR = '(?<scope>_|\.+|c\.)?(?<ns>\\\?(?:[a-zA-Z]\w*\\\)+)?(?<var_name>[a-zA-Z_]\w*)(?<var_up>@\d*)?(?<var_array>(?:\.\w+)*)?(?<class>(?<class_type>->|::)(?<prop>[a-zA-Z_]\w*)(?<prop_array>(?:\.\w+)*)?)*(?<zerofill>#\d+)?(?<func>(?:\|\w+(?:=.+)?)*)?';
+	protected const PATTERN_VAR = '(?<scope>_|\.+|c\.)?(?<ns>\\\?(?:[a-zA-Z]\w*\\\)+)?(?<var_name>[a-zA-Z_]\w*)(?<var_up>@\d*)?(?<var_array>(?:\.\w+)*)?(?<class>(?<class_type>->|::)(?<prop>[a-zA-Z_]\w*)(?<prop_array>(?:\.\w+)*)?)*(?<zerofill>#\d+)?(?<func>(?:\|\w+(?:=[^\h]+)?)*)?';
 	protected const PATTERN_TAG = '/(?|({\*|\*})|{(\?:|[&?:\/@%=;#+\]\\\]|loop|each|if|foreach|for|while|else|end|refer|include|execute|dump|escape)\h*)/i';
-
-	// protected const PATTERN_VAR = '(?<scope>_|\\.+|c\\.)?(?<ns>\\\\\\?(?:[a-zA-Z]\\w*\\\\\\)+)?(?<var_name>[a-zA-Z_]\\w*)(?<var_up>@\\d*)?(?<var_array>(?:\\.\\w+)*)?(?<class>(?:->|::)(?:[a-zA-Z_]\\w*)(?:\\.\\w+)*?)+(?<zerofill>#\\d+)?(?<func>(?:\\|\\w+(?:=.+)?)*)?';
-
 
 	protected string $compileRoot  = './_compile';
 	protected array  $preCompiler  = [];
@@ -138,6 +134,11 @@ class SkyTemplateCompiler
 			foreach (explode("\n", $src) as $line => $str) {
 				$php .= $this->parsePerLine($str) . "\n";
 			}
+
+			if ($this->arrBlock) {
+				throw new RuntimeException('End tag is not closed');
+			}
+			
 			return $php;
 
 		} catch (RuntimeException $e) {
@@ -454,17 +455,16 @@ class SkyTemplateCompiler
 		return '<?=htmlspecialchars(' . $this->parseVarCommon($match) . ')?>';
 	}
 
+	protected function parseVarInExpression(string $str): array|string|null
+	{
+		return preg_replace_callback('/' . self::PATTERN_VAR . '/', [$this, 'parseVarCommon'], $str);
+	}
+
 	protected function parseExpression(string $str): string
 	{
-		$php = '';
-		$tmp = $this->tokenizeByQuote($str);
-		for ($i = 0, $ci = count($tmp); $i < $ci; $i += 2) {
-			if ($tmp[$i] !== '') {
-				$php .= preg_replace_callback("/([^\w\h.]*\h*)(" . self::PATTERN_VAR . ")(\h*[^\w\h.]*)/", [__CLASS__, 'parseExpCallback'], $tmp[$i]);
-			}
-			$php .= $tmp[$i + 1] ?? '';
-		}
-		return $php;
+		[$str, $keys, $values] = $this->backupQuotes($str);
+		$php = preg_replace_callback("/([^\w\h.]*\h*)(" . self::PATTERN_VAR . ")(\h*[^\w\h.]*)/", [__CLASS__, 'parseExpCallback'], $str);
+		return str_replace($keys, $values, $php);
 	}
 
 	protected function parseExpCallback(array $match)
@@ -492,34 +492,42 @@ class SkyTemplateCompiler
 		return $prev . $this->parseVarCommon($match) . $next;
 	}
 
-	protected function tokenizeByQuote($str): array
+	protected function backupQuotes($str): array
 	{
-		$tokens = [];
+		$keys   = [];
+		$values = [];
+
 		$tmp = preg_split('/((?<!\\\)[\'"])/', $str, -1, PREG_SPLIT_DELIM_CAPTURE);
 
+		$result = $tmp[0];
 		$quotes = [];
-		$index = 0;
-		$tokens[$index] = $tmp[0];
-		for ($i = 1, $ci = count($tmp); $i < $ci; $i+=2) {
+		$index  = 0;
+		$value  = '';
+		for ($i = 1, $ci = count($tmp); $i < $ci; $i += 2) {
 			$token = $tmp[$i];
 			$next  = $tmp[$i + 1] ?? '';
 			if ($quotes) {
-				$tokens[$index] .= $token;
+				$value .= $token;
 				if ($token === end($quotes)) {
 					array_pop($quotes);
+					$key      = sprintf('$%02d', $index);
+					$keys[]   = $key;
+					$values[] = $value;
+					$result   .= $key . $next;
+
+					$value = '';
 					$index++;
-					$tokens[$index] = $next;
 				} else {
-					$tokens[$index] .= $next;
+					$value .= $next;
 				}
 				continue;
 			}
-			$index++;
-			$quotes[]       = $token;
-			$tokens[$index] = $token . $next;
+
+			$quotes[] = $token;
+			$value    = $token . $next;
 		}
 
-		return $tokens;
+		return [$result, $keys, $values];
 	}
 
 	protected function parseVarCommon(array $match): string
@@ -662,21 +670,38 @@ class SkyTemplateCompiler
 				$v = 'length=' . $v;
 			}
 			if (str_contains($v, '=')) {
-				[$func, $arg] = array_map('trim', explode('=', $v, 2));
+				[$func, $args] = array_map('trim', explode('=', $v, 2));
 			} else {
 				$func = $v;
-				$arg  = null;
+				$args  = null;
 			}
-			$arg = match ($arg) {
-				null, '' => $code,
-				str_contains($arg, '##') => str_replace('##', $code, $this->correctEmptyArg($arg)),
-				default => $code . ',' . $this->correctEmptyArg($arg),
-			};
+
+			if ($args === null || $args === '') {
+				$args = $code;
+			} else {
+				$exists = false;
+				$tmp    = array_map('trim', explode(',', $args));
+				foreach ($tmp as &$arg) {
+					if ($arg === '##') {
+						$exists = true;
+						$arg    = $code;
+					} elseif ($arg === '') {
+						$arg = "''";
+					} else {
+						$arg = $this->parseVarInExpression($arg);
+					}
+				}
+				unset($arg);
+				$args = implode(',', $tmp);
+				if (!$exists) {
+					$args = $code . ',' . $args;
+				}
+			}
 
 			if (method_exists($this->formatter, $func)) {
-				$code = sprintf('_F::%s(%s)', $func, $arg);
+				$code = sprintf('_F::%s(%s)', $func, $args);
 			} else {
-				$code = sprintf('%s(%s)', $func, $arg);
+				$code = sprintf('%s(%s)', $func, $args);
 			}
 		}
 
@@ -698,11 +723,6 @@ class SkyTemplateCompiler
 			return sprintf('$v%d[%s]??$v0[%s]??0', $this->depth, $name, $name);
 		}
 		return sprintf('$v0[%s]??0', $name);
-	}
-
-	protected function correctEmptyArg($arg): string
-	{
-		return implode(',', array_map(fn ($v) => trim($v) === '' ? "''" : $v, explode(',', $arg)));
 	}
 
 	protected function writeFile(string $file, string $str, int $chmod = 0606): int|false

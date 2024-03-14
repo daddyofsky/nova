@@ -40,6 +40,11 @@ class Response
 
 	public function content(string|array|View $content): static
 	{
+		// remove old contents
+		$this->content = null;
+		$this->view    = null;
+		$this->data    = null;
+
 		if (is_array($content)) {
 			$this->data = $content;
 		} elseif ($content instanceof View) {

@@ -6,8 +6,6 @@ use Nova\Http\FormRequest;
 use Nova\Http\Request;
 use Nova\Http\Response;
 use Nova\Support\Reflection;
-use Nova\View;
-use RuntimeException;
 
 class Route
 {
@@ -38,9 +36,9 @@ class Route
 			if (!class_exists($class) || !method_exists($class, $method)) {
 				response()->error404();
 			}
-			$response = App::make($class)?->$method(...Reflection::bindParameters([$class, $method], $request->args())) ?? '';
+			$response = App::make($class)?->$method(...$this->bindParameters([$class, $method], $request->args())) ?? '';
 		} elseif (is_callable($action)) {
-			$response = $action(...Reflection::bindParameters($action, $request->args()));
+			$response = $action(...$this->bindParameters($action, $request->args()));
 		} else {
 			response()->error404();
 		}
@@ -53,6 +51,26 @@ class Route
 		$this->terminateMiddleware($request, $response);
 
 		return $response;
+	}
+
+	protected function bindParameters(array|callable $closure, array $args): array
+	{
+		$parameters = Reflection::bindParameters($closure, $args);
+		$this->guard($parameters);
+		
+		return $parameters;
+	}
+
+	/**
+	 * @throws \Nova\Exceptions\ErrorException
+	 */
+	protected function guard(array $parameters): void
+	{
+		foreach ($parameters as $parameter) {
+			if (method_exists($parameter, 'guard')) {
+				$parameter->guard();
+			}
+		}	
 	}
 
 	public function setAction($action): static

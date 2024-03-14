@@ -1,8 +1,5 @@
 <?php
 
-use App\View\ModuleHandler;
-use App\View\PreCompiler;
-
 return [
 	// app
 	'app.name'   => env('APP_NAME', 'Nova'),
@@ -35,7 +32,7 @@ return [
 	'db.table_prefix' => '',
 
 	// view
-	'view.dev'              => env('APP_ENV', 'live') === 'dev',
+	'view.dev'              => env('APP_DEBUG') && env('APP_ENV') === 'dev',
 	'view.ext'              => 'html',
 	'view.version'          => 0,
 	'view.resource_version' => env('APP_DEBUG') ? time() : 1,

@@ -12,7 +12,6 @@ class View extends SkyTemplate
 	protected const LAYOUT = 'LAYOUT';
 	protected const BODY   = 'BODY';
 
-	protected Controller $app;
 	protected string $provider = ViewServiceProvider::class;
 
 	protected string $_layout = '';

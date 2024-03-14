@@ -1,6 +1,7 @@
 <?php
 namespace Nova\Exceptions;
 
+use Error;
 use Nova\App;
 use Nova\Debug;
 use Nova\DebugError;
@@ -46,7 +47,7 @@ class Handler
 
 	protected function render(Throwable $e): void
 	{
-		if ($e instanceof ErrorException) {
+		if ($e instanceof ErrorException || $e instanceof Error) {
 			// log
 			if (!$e instanceof RedirectException) {
 				Log::save($e);
@@ -62,14 +63,14 @@ class Handler
 		}
 	}
 
-	protected function renderErrorDebug(ErrorException $e): Response
+	protected function renderErrorDebug(ErrorException|Error $e): Response
 	{
 		ob_start();
 		DebugError::make()->handleException($e);
 		return response()->content(ob_get_clean());
 	}
 
-	protected function renderError(ErrorException $e): Response
+	protected function renderError(ErrorException|Error $e): Response
 	{
 		$message = _T($e->getMessage());
 		if ($this->legacy && $message) {
@@ -78,7 +79,7 @@ class Handler
 			}
 			return response()
 				->content(
-					view($this->getErrorTpl($e))
+					view($this->getErrorTpl($e), 'blank')
 						->with('url', $e->getUrl())
 						->with('message', $message)
 				)

@@ -244,7 +244,7 @@ class Model extends ArrayData
 		return $this;
 	}
 
-	public function arrange(string|callable $callback = 'format', ...$args): static
+	public function iterate(string|callable $callback = 'format', ...$args): static
 	{
 		$callback || $callback = 'format';
 		if (is_string($callback)) {
@@ -308,7 +308,7 @@ class Model extends ArrayData
 			$where[] = [$that_key, $values];
 
 			/** @noinspection SelfClassReferencingInspection */
-			return (array)Model::make($table)->findAll($where, $columns)->arrange();
+			return (array)Model::make($table)->findAll($where, $columns)->iterate();
 		}
 
 		return [];

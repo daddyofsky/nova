@@ -71,16 +71,6 @@ class Validator
 	 * @throws \Nova\Exceptions\ValidationException
 	 * @throws \Nova\Exceptions\ValidationRuleException
 	 */
-	public function validate(array $rules = []): array
-	{
-		$data = $this->validated($rules);
-		return array_merge($this->request->all(), $data);
-	}
-
-	/**
-	 * @throws \Nova\Exceptions\ValidationException
-	 * @throws \Nova\Exceptions\ValidationRuleException
-	 */
 	public function validated(array $rules = []): array
 	{
 		// before callback
@@ -88,9 +78,10 @@ class Validator
 			$this->request->beforeValidation();
 		}
 
+		$data = $this->request->all();
+
 		$rules || $rules = $this->request->rules();
 		if ($rules) {
-			$data = [];
 			foreach ($rules as $key => $rule) {
 				$value = $this->checkByRule($key, $this->parseRule($rule));
 				if ($value === false) {
@@ -101,12 +92,10 @@ class Validator
 				}
 				$data[$key] = $value;
 			}
-		} else {
-			$data = $this->request->all();
 		}
 
 		if ($this->errors) {
-			throw new ValidationException($this->errors);
+			throw (new ValidationException())->errors($this->errors);
 		}
 
 		// after callback
